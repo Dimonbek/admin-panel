@@ -79,6 +79,15 @@ function chiqishHolati(hhmm, jadval) {
   return "vaqtida";
 }
 
+/** Lavozimdan taxminiy bo'lim (hisobotda guruhlash uchun). Panelda keyin qo'lda o'zgartirilishi mumkin. */
+function bolimLavozimdan(lavozim) {
+  const s = String(lavozim || "").toLowerCase();
+  if (s.includes("qorovul") || s.includes("qоровул") || s.includes("qarovul")) return "Qorovullar";
+  if (s.includes("haydovchi") || s.includes("shofyor")) return "Transport";
+  if (s.includes("operator") || s.includes("ishchi") || s.includes("mashinist")) return "Ishlab chiqarish";
+  return "Asosiy bo'lim";
+}
+
 // ───────── Server ─────────
 
 const app = express();
@@ -199,14 +208,28 @@ app.get("/api/davomat/hom", (req, res) => {
 
 // --- Davomat qo'shish (keyin Android ilova shu yerga yuboradi; hozir qo'lda/sinov uchun) ---
 app.post("/api/davomat", (req, res) => {
-  const { xodimId, yonalish, vaqt, rasm, jonli, lat, lng } = req.body || {};
-  const x = db.xodimlar.find((e) => e.id === Number(xodimId));
-  if (!x) return res.status(400).json({ xato: "Xodim topilmadi" });
+  const { xodimId, ism, lavozim, bolim, yonalish, vaqt, rasm, jonli, lat, lng } = req.body || {};
+  const id = Number(xodimId);
+  let x = db.xodimlar.find((e) => e.id === id);
+  if (!x) {
+    // Xodimlar ilovada yuz bilan qo'shiladi — panelda bo'lmasa, kirish kelganda avtomatik yaratamiz
+    if (!id || !ism || !String(ism).trim()) return res.status(400).json({ xato: "Xodim topilmadi" });
+    const lv = (lavozim || "operator").trim();
+    x = { id, ism: String(ism).trim(), lavozim: lv, bolim: (bolim || bolimLavozimdan(lv)).trim(), rasm: null, yaratilgan: Date.now() };
+    db.xodimlar.push(x);
+    if (id >= db.keyingiXodim) db.keyingiXodim = id + 1;
+  } else {
+    // ilovada o'zgargan bo'lsa yangilaymiz
+    if (ism && String(ism).trim()) x.ism = String(ism).trim();
+    if (lavozim) x.lavozim = String(lavozim).trim();
+    if (bolim) x.bolim = String(bolim).trim();
+  }
   let rasmNom = null;
   if (rasm && /^data:image\/jpe?g;base64,/.test(rasm)) {
     fs.mkdirSync(UPLOADS, { recursive: true });
     rasmNom = `ev_${Date.now()}_${x.id}.jpg`;
     fs.writeFileSync(path.join(UPLOADS, rasmNom), Buffer.from(rasm.split(",")[1], "base64"));
+    if (!x.rasm) x.rasm = rasmNom; // xodim surati bo'lmasa — birinchi selfini qo'yamiz
   }
   const d = {
     id: db.keyingiDavomat++,
