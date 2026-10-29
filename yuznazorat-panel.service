@@ -1,0 +1,17 @@
+[Unit]
+Description=Yuz Nazorat admin panel
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/yuznazorat-panel
+# .env dagi sozlamalarni yuklaydi (PORT, PANEL_PAROL, API_KALIT)
+EnvironmentFile=/opt/yuznazorat-panel/.env
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=3
+User=www-data
+Group=www-data
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,14 @@
+{
+  "name": "yuznazorat-panel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Yuz Nazorat — veb admin panel (davomat, lavozim jadvallari, hisobot)",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "express": "^4.21.2"
+  }
+}

@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="uz">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Yuz Nazorat — Admin panel</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <div class="logo">Yuz Nazorat <span>admin panel</span></div>
+      <nav id="menyu">
+        <button data-sahifa="davomat" class="faol">Kunlik davomat</button>
+        <button data-sahifa="xodimlar">Xodimlar</button>
+        <button data-sahifa="jadvallar">Lavozim jadvallari</button>
+        <button data-sahifa="hisobot">Hisobot</button>
+      </nav>
+    </header>
+
+    <main>
+      <!-- Kunlik davomat -->
+      <section id="davomat" class="sahifa faol">
+        <div class="qator">
+          <h1>Kunlik davomat</h1>
+          <input type="date" id="sana" />
+        </div>
+        <div class="jadval-orash">
+          <table id="davomatJadval">
+            <thead>
+              <tr>
+                <th>Rasm</th><th>Ism</th><th>Lavozim</th>
+                <th>Kirish</th><th>Chiqish</th><th>Kirish surati</th><th>Chiqish surati</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Xodimlar -->
+      <section id="xodimlar" class="sahifa">
+        <div class="qator">
+          <h1>Xodimlar</h1>
+          <button class="asosiy" id="xodimQosh">+ Xodim qo‘shish</button>
+        </div>
+        <div class="jadval-orash">
+          <table id="xodimJadval">
+            <thead><tr><th>#</th><th>Ism</th><th>Bo‘lim</th><th>Lavozim</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Hisobot -->
+      <section id="hisobot" class="sahifa">
+        <div class="qator"><h1>Hisobot (Excel)</h1></div>
+        <p class="izoh">Namunadagi (iVMS) ko‘rinishdagi Excel hisobot. Yuklab olib, keyin guruhga yuborasiz. Telegram botga ulanish keyin qo‘shiladi.</p>
+        <div class="kartalar">
+          <div class="karta">
+            <h3 style="text-transform:none">Kunlik hisobot</h3>
+            <div class="maydon"><label>Sana</label><input type="date" id="hKunSana"></div>
+            <button class="asosiy" id="hKunYukla">Excel yuklab olish</button>
+          </div>
+          <div class="karta">
+            <h3 style="text-transform:none">Oylik hisobot</h3>
+            <div class="maydon"><label>Oy</label><input type="month" id="hOy"></div>
+            <button class="asosiy" id="hOyYukla">Excel yuklab olish</button>
+          </div>
+        </div>
+
+        <h2 style="margin:26px 0 6px;font-size:18px">Telegram guruhga yuborish</h2>
+        <p class="izoh">Botni @BotFather'da oching, tokenni bu yerga qo‘ying va botni guruhga admin qilib qo‘shing. Guruh ID ni olish uchun quyida yo‘riqnoma bor.</p>
+        <div class="karta" style="max-width:520px">
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div><label style="font-size:13px;color:var(--kulrang)">Bot tokeni</label><input type="text" id="tgToken" style="width:100%" placeholder="123456:ABC-..."></div>
+            <div><label style="font-size:13px;color:var(--kulrang)">Guruh ID (chat_id)</label><input type="text" id="tgChat" style="width:100%" placeholder="-100123456789"></div>
+            <div class="maydon"><label>Har kirish/chiqishda rasmni guruhga yuborish</label><input type="checkbox" id="tgHodisa"></div>
+            <div class="maydon"><label>Har kuni avtomatik (kechagi hisobot)</label><input type="checkbox" id="tgAvto"></div>
+            <div class="maydon"><label>Yuborish vaqti</label><input type="time" id="tgVaqt"></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="asosiy" id="tgSaqla">Sozlamani saqlash</button>
+              <button class="oq" id="tgSinov">Hozir yuborib ko‘rish (kunlik)</button>
+            </div>
+            <div id="tgNatija" style="font-size:13px"></div>
+          </div>
+        </div>
+        <details style="margin-top:14px">
+          <summary style="cursor:pointer;color:var(--asosiy)">Guruh ID ni qanday olish mumkin?</summary>
+          <ol style="margin:10px 0 0 20px;color:var(--kulrang);font-size:13px;line-height:1.7">
+            <li>@BotFather'da <b>/newbot</b> — bot yaratib, <b>tokenni</b> oling</li>
+            <li>Botni o‘z guruhingizga qo‘shing va <b>admin</b> qiling</li>
+            <li>Guruhda biror xabar yozing</li>
+            <li>Brauzerda oching: <code>https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</code> — javobdagi <code>chat.id</code> (masalan -100...) — bu Guruh ID</li>
+          </ol>
+        </details>
+      </section>
+
+      <!-- Jadvallar -->
+      <section id="jadvallar" class="sahifa">
+        <div class="qator"><h1>Lavozim jadvallari</h1></div>
+        <p class="izoh">Har lavozim uchun kirish va chiqish vaqti oynasi. O‘zgartirib, «Saqlash» bosing.</p>
+        <div id="jadvalKartalar"></div>
+      </section>
+    </main>
+
+    <!-- Oyna (modal) -->
+    <div id="oyna" class="oyna-fon">
+      <div class="oyna">
+        <div class="oyna-sarlavha"><span id="oynaSarlavha"></span><button id="oynaYop">✕</button></div>
+        <div id="oynaTana"></div>
+      </div>
+    </div>
+
+    <!-- Rasm ko'rish -->
+    <div id="rasmOyna" class="oyna-fon">
+      <img id="kattaRasm" src="" alt="surat" />
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
