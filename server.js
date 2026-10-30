@@ -29,7 +29,7 @@ function boshlangich() {
       operator: { kirishDan: "06:00", kirishGacha: "08:00", chiqishDan: "17:00", chiqishGacha: "21:00" },
       haydovchi: { kirishDan: "06:00", kirishGacha: "08:00", chiqishDan: "17:00", chiqishGacha: "21:00" },
     },
-    telegram: { token: "", chatId: "", avto: false, vaqt: "09:30", oxirgiYuborilgan: "", hodisaYubor: true },
+    telegram: { token: "", chatId: "", avto: false, vaqt: "09:30", oxirgiYuborilgan: "", hodisaYubor: false },
     keyingiXodim: 1,
     keyingiDavomat: 1,
   };
