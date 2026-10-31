@@ -145,27 +145,31 @@ $("#hOyYukla").addEventListener("click", () => {
 async function telegramYukla() {
   const t = await api("/api/telegram");
   $("#tgToken").value = t.token || "";
+  $("#tgAdmin").value = t.adminChatId || "";
   $("#tgChat").value = t.chatId || "";
+  $("#tgThread").value = t.threadId || "";
   $("#tgAvto").checked = !!t.avto;
-  $("#tgHodisa").checked = t.hodisaYubor !== false;
   $("#tgVaqt").value = t.vaqt || "09:30";
 }
-$("#tgSaqla").addEventListener("click", async () => {
-  await api("/api/telegram", "PUT", {
+function tgSozlama() {
+  return {
     token: $("#tgToken").value.trim(),
+    adminChatId: $("#tgAdmin").value.trim(),
     chatId: $("#tgChat").value.trim(),
+    threadId: $("#tgThread").value.trim(),
     avto: $("#tgAvto").checked,
-    hodisaYubor: $("#tgHodisa").checked,
     vaqt: $("#tgVaqt").value,
-  });
+  };
+}
+$("#tgSaqla").addEventListener("click", async () => {
+  await api("/api/telegram", "PUT", tgSozlama());
   $("#tgNatija").textContent = "Saqlandi ✓";
   $("#tgNatija").style.color = "var(--yashil)";
 });
 $("#tgSinov").addEventListener("click", async () => {
   $("#tgNatija").textContent = "Yuborilmoqda…";
   $("#tgNatija").style.color = "var(--kulrang)";
-  // avval joriy sozlamani saqlaymiz, keyin yuboramiz
-  await api("/api/telegram", "PUT", { token: $("#tgToken").value.trim(), chatId: $("#tgChat").value.trim() });
+  await api("/api/telegram", "PUT", tgSozlama()); // avval saqlaymiz
   const r = await api("/api/telegram/yubor", "POST", { sana: $("#hKunSana").value });
   if (r.ok) { $("#tgNatija").textContent = "✓ " + r.matn; $("#tgNatija").style.color = "var(--yashil)"; }
   else { $("#tgNatija").textContent = "✗ " + (r.xato || "Xato"); $("#tgNatija").style.color = "var(--qizil)"; }

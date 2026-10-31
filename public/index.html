@@ -68,29 +68,31 @@
           </div>
         </div>
 
-        <h2 style="margin:26px 0 6px;font-size:18px">Telegram guruhga yuborish</h2>
-        <p class="izoh">Botni @BotFather'da oching, tokenni bu yerga qo‘ying va botni guruhga admin qilib qo‘shing. Guruh ID ni olish uchun quyida yo‘riqnoma bor.</p>
+        <h2 style="margin:26px 0 6px;font-size:18px">Telegram — tasdiq bilan yuborish</h2>
+        <p class="izoh"><b>Oqim:</b> hisobot avval <b>Admin lichkangizga</b> keladi → siz <b>✅ Tasdiqlash</b> tugmasini bosasiz → shundan keyingina <b>guruhga</b> boradi. Test ham, avtomatik ham — har doim shunday.</p>
         <div class="karta" style="max-width:520px">
           <div style="display:flex;flex-direction:column;gap:10px">
             <div><label style="font-size:13px;color:var(--kulrang)">Bot tokeni</label><input type="text" id="tgToken" style="width:100%" placeholder="123456:ABC-..."></div>
+            <div><label style="font-size:13px;color:var(--kulrang)">Admin lichka ID (tasdiqlovchi)</label><input type="text" id="tgAdmin" style="width:100%" placeholder="123456789"></div>
             <div><label style="font-size:13px;color:var(--kulrang)">Guruh ID (chat_id)</label><input type="text" id="tgChat" style="width:100%" placeholder="-100123456789"></div>
-            <div class="maydon"><label>Har kirish/chiqishda rasmni guruhga yuborish</label><input type="checkbox" id="tgHodisa"></div>
+            <div><label style="font-size:13px;color:var(--kulrang)">Mavzu ID (ixtiyoriy — mavzuli guruh uchun)</label><input type="text" id="tgThread" style="width:100%" placeholder="masalan 12"></div>
             <div class="maydon"><label>Har kuni avtomatik (kechagi hisobot)</label><input type="checkbox" id="tgAvto"></div>
             <div class="maydon"><label>Yuborish vaqti</label><input type="time" id="tgVaqt"></div>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
               <button class="asosiy" id="tgSaqla">Sozlamani saqlash</button>
-              <button class="oq" id="tgSinov">Hozir yuborib ko‘rish (kunlik)</button>
+              <button class="oq" id="tgSinov">Hozir sinab ko‘rish (lichkaga)</button>
             </div>
             <div id="tgNatija" style="font-size:13px"></div>
           </div>
         </div>
         <details style="margin-top:14px">
-          <summary style="cursor:pointer;color:var(--asosiy)">Guruh ID ni qanday olish mumkin?</summary>
+          <summary style="cursor:pointer;color:var(--asosiy)">ID larni qanday olaman? (Admin lichka, Guruh, Mavzu)</summary>
           <ol style="margin:10px 0 0 20px;color:var(--kulrang);font-size:13px;line-height:1.7">
-            <li>@BotFather'da <b>/newbot</b> — bot yaratib, <b>tokenni</b> oling</li>
+            <li>@BotFather'da <b>/newbot</b> — bot yaratib, <b>tokenni</b> oling va yuqoriga qo‘yib <b>Saqlang</b></li>
+            <li><b>Admin lichka ID:</b> botni lichkada oching va <b>/start</b> yozing — bot sizga <code>Chat ID</code> ni qaytaradi. Shuni «Admin lichka ID» ga qo‘ying</li>
             <li>Botni o‘z guruhingizga qo‘shing va <b>admin</b> qiling</li>
-            <li>Guruhda biror xabar yozing</li>
-            <li>Brauzerda oching: <code>https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</code> — javobdagi <code>chat.id</code> (masalan -100...) — bu Guruh ID</li>
+            <li><b>Guruh / Mavzu ID:</b> guruhda (mavzuli bo‘lsa — kerakli mavzuda) <b>/id</b> yozing — bot <code>Chat ID</code> va (mavzuli bo‘lsa) <code>Mavzu ID</code> ni qaytaradi</li>
+            <li>Hammasini qo‘yib <b>Saqlang</b>, so‘ng <b>Hozir sinab ko‘rish</b> — lichkangizga tasdiq so‘rovi keladi</li>
           </ol>
         </details>
       </section>

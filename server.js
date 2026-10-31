@@ -29,7 +29,7 @@ function boshlangich() {
       operator: { kirishDan: "06:00", kirishGacha: "08:00", chiqishDan: "17:00", chiqishGacha: "21:00" },
       haydovchi: { kirishDan: "06:00", kirishGacha: "08:00", chiqishDan: "17:00", chiqishGacha: "21:00" },
     },
-    telegram: { token: "", chatId: "", avto: false, vaqt: "09:30", oxirgiYuborilgan: "", hodisaYubor: false },
+    telegram: { token: "", chatId: "", adminChatId: "", threadId: "", avto: false, vaqt: "09:30", oxirgiYuborilgan: "", hodisaYubor: false },
     keyingiXodim: 1,
     keyingiDavomat: 1,
   };
@@ -358,16 +358,34 @@ app.get("/api/hisobot/oylik.xlsx", async (req, res) => {
 
 // ───────── Telegram ─────────
 
-/** xlsx buferini guruhga fayl qilib yuboradi */
-async function telegramFayl(token, chatId, buf, nom, izoh) {
+const XLSX_TUR = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+/** xlsx buferini chat (guruh yoki lichka) ga fayl qilib yuboradi. threadId — mavzuli guruh uchun. replyMarkup — tugmalar. */
+async function telegramFayl(token, chatId, buf, nom, izoh, threadId, replyMarkup) {
   const form = new FormData();
   form.append("chat_id", String(chatId));
+  if (threadId) form.append("message_thread_id", String(threadId));
   if (izoh) form.append("caption", izoh);
-  form.append("document", new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), nom);
+  if (replyMarkup) form.append("reply_markup", JSON.stringify(replyMarkup));
+  form.append("document", new Blob([buf], { type: XLSX_TUR }), nom);
   const r = await fetch(`https://api.telegram.org/bot${token}/sendDocument`, { method: "POST", body: form });
   const j = await r.json().catch(() => ({ ok: false, description: "javob o'qilmadi" }));
   if (!j.ok) throw new Error(j.description || "Telegram xatosi");
   return j;
+}
+
+/** Telegram Bot API ga JSON so'rov (sendMessage, answerCallbackQuery, editMessageCaption...) */
+async function tgFetch(token, metod, tana) {
+  try {
+    const r = await fetch(`https://api.telegram.org/bot${token}/${metod}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(tana),
+    });
+    return await r.json().catch(() => ({ ok: false }));
+  } catch (e) {
+    return { ok: false, description: e.message };
+  }
 }
 
 /** Bitta selfi rasmni izoh bilan guruhga yuboradi (har kirish/chiqishda) */
@@ -382,27 +400,53 @@ async function telegramRasm(token, chatId, buf, izoh) {
   return j;
 }
 
-/** Berilgan kun uchun kunlik hisobotni yaratib guruhga yuboradi */
-async function kunlikYubor(kun) {
-  const t = db.telegram;
-  if (!t.token || !t.chatId) throw new Error("Bot tokeni yoki guruh ID kiritilmagan");
+const kutilayotgan = new Map(); // tasdiq_id -> { kun }
+
+/** Kunlik hisobot buferi, izohi va fayl nomini tayyorlaydi */
+async function kunlikTayyor(kun) {
   const m = kunlikMalumot(kun);
   const kunNuqta = kun.split("-").reverse().join(".");
-  const buf = await kunlikXlsx({ ...m, sana: kunNuqta });
+  const buf = Buffer.from(await kunlikXlsx({ ...m, sana: kunNuqta }));
   const foiz = m.jami ? Math.round((m.kelgan / m.jami) * 100) : 0;
   const izoh = `📊 Кунлик давомат ҳисоботи — ${kunNuqta}\nЖами: ${m.jami} | Келган: ${m.kelgan} (${foiz}%) | Келмаган: ${m.kelmagan}`;
-  return telegramFayl(t.token, t.chatId, Buffer.from(buf), `Report_Kunlik_${kun}.xlsx`, izoh);
+  return { buf, izoh, nom: `Report_Kunlik_${kun}.xlsx` };
+}
+
+/** AVVAL admin lichkasiga tasdiqlash uchun yuboradi (tugma bilan). Guruhga faqat tasdiqdan keyin boradi. */
+async function kunlikYubor(kun) {
+  const t = db.telegram;
+  if (!t.token) throw new Error("Bot tokeni kiritilmagan");
+  if (!t.adminChatId) throw new Error("Admin lichka ID kiritilmagan — tasdiqlash uchun shart");
+  const { buf, izoh, nom } = await kunlikTayyor(kun);
+  const id = String(Date.now()).slice(-9);
+  kutilayotgan.set(id, { kun });
+  const markup = { inline_keyboard: [[
+    { text: "✅ Тасдиқлаш", callback_data: `ok:${id}` },
+    { text: "❌ Рад этиш", callback_data: `no:${id}` },
+  ]] };
+  await telegramFayl(t.token, t.adminChatId, buf, nom, `${izoh}\n\n⏳ Тасдиқласангиз гуруҳга юборилади.`, null, markup);
+  return { tasdiq: true };
+}
+
+/** Tasdiqdan keyin hisobotni guruhga (mavzuli bo'lsa — mavzuga) yuboradi */
+async function guruhgaYubor(kun) {
+  const t = db.telegram;
+  if (!t.chatId) throw new Error("Guruh ID kiritilmagan");
+  const { buf, izoh, nom } = await kunlikTayyor(kun);
+  await telegramFayl(t.token, t.chatId, buf, nom, izoh, t.threadId);
 }
 
 app.get("/api/telegram", (req, res) => {
   const t = db.telegram;
-  res.json({ token: t.token, chatId: t.chatId, avto: t.avto, vaqt: t.vaqt, oxirgiYuborilgan: t.oxirgiYuborilgan, hodisaYubor: t.hodisaYubor });
+  res.json({ token: t.token, chatId: t.chatId, adminChatId: t.adminChatId, threadId: t.threadId, avto: t.avto, vaqt: t.vaqt, oxirgiYuborilgan: t.oxirgiYuborilgan, hodisaYubor: t.hodisaYubor });
 });
 
 app.put("/api/telegram", (req, res) => {
-  const { token, chatId, avto, vaqt, hodisaYubor } = req.body || {};
+  const { token, chatId, adminChatId, threadId, avto, vaqt, hodisaYubor } = req.body || {};
   if (token !== undefined) db.telegram.token = String(token).trim();
   if (chatId !== undefined) db.telegram.chatId = String(chatId).trim();
+  if (adminChatId !== undefined) db.telegram.adminChatId = String(adminChatId).trim();
+  if (threadId !== undefined) db.telegram.threadId = String(threadId).trim();
   if (avto !== undefined) db.telegram.avto = Boolean(avto);
   if (hodisaYubor !== undefined) db.telegram.hodisaYubor = Boolean(hodisaYubor);
   if (vaqt !== undefined && /^\d{2}:\d{2}$/.test(vaqt)) db.telegram.vaqt = vaqt;
@@ -414,16 +458,16 @@ app.post("/api/telegram/yubor", async (req, res) => {
   try {
     const kun = /^\d{4}-\d{2}-\d{2}$/.test(req.body?.sana) ? req.body.sana : bugun();
     await kunlikYubor(kun);
-    res.json({ ok: true, matn: "Guruhga yuborildi" });
+    res.json({ ok: true, matn: "Admin lichkangizga tasdiqlash uchun yuborildi — tasdiqlasangiz guruhga boradi" });
   } catch (e) {
     res.status(400).json({ xato: e.message });
   }
 });
 
-// Har kuni belgilangan vaqtda KECHAGI kunlik hisobotni avtomatik yuboradi
+// Har kuni belgilangan vaqtda KECHAGI kunlik hisobotni admin lichkasiga (tasdiqlashga) yuboradi
 setInterval(async () => {
   const t = db.telegram;
-  if (!t.avto || !t.token || !t.chatId) return;
+  if (!t.avto || !t.token || !t.adminChatId) return;
   const hozir = soat(Date.now());
   const bugunKun = bugun();
   if (hozir !== t.vaqt || t.oxirgiYuborilgan === bugunKun) return;
@@ -432,11 +476,79 @@ setInterval(async () => {
     await kunlikYubor(kecha);
     t.oxirgiYuborilgan = bugunKun;
     saqla();
-    console.log(`[telegram] ${kecha} hisoboti yuborildi`);
+    console.log(`[telegram] ${kecha} hisoboti admin lichkasiga tasdiqlashga yuborildi`);
   } catch (e) {
     console.error("[telegram] yuborilmadi:", e.message);
   }
 }, 60 * 1000);
+
+// ───────── Telegram tugma (tasdiq/rad) va ID yordamchisi — getUpdates polling ─────────
+const yangi = (ms) => new Promise((r) => setTimeout(r, ms));
+let tgOffset = 0;
+
+async function tgYangilik(u, t) {
+  // /start yoki /id — chat (va mavzu) ID sini javob qiladi (ID larni olish uchun)
+  if (u.message && typeof u.message.text === "string" && /^\/(start|id)\b/.test(u.message.text)) {
+    const chat = u.message.chat;
+    const thread = u.message.message_thread_id;
+    let matn = `🆔 Chat ID: ${chat.id}`;
+    if (thread) matn += `\n🧵 Мавзу (thread) ID: ${thread}`;
+    matn += chat.type === "private"
+      ? `\n→ Панелдаги "Admin личка ID" майдонига қўйинг`
+      : `\n→ Панелдаги "Гуруҳ ID"${thread ? ' ва "Мавзу ID"' : ""} майдонига қўйинг`;
+    await tgFetch(t.token, "sendMessage", thread ? { chat_id: chat.id, message_thread_id: thread, text: matn } : { chat_id: chat.id, text: matn });
+    return;
+  }
+  // Tugma bosildi — tasdiq yoki rad
+  if (u.callback_query) {
+    const cq = u.callback_query;
+    const [amal, id] = String(cq.data || "").split(":");
+    const p = id && kutilayotgan.get(id);
+    const xabarTuzat = (qoshimcha) =>
+      tgFetch(t.token, "editMessageCaption", { chat_id: cq.message.chat.id, message_id: cq.message.message_id, caption: `${cq.message.caption || ""}\n\n${qoshimcha}` });
+    if (!p) {
+      await tgFetch(t.token, "answerCallbackQuery", { callback_query_id: cq.id, text: "Муддати ўтган ёки аллақачон ҳал қилинган" });
+      await xabarTuzat("ℹ️ Бу сўров аллақачон ҳал қилинган");
+      return;
+    }
+    kutilayotgan.delete(id);
+    if (amal === "ok") {
+      try {
+        await guruhgaYubor(p.kun);
+        await tgFetch(t.token, "answerCallbackQuery", { callback_query_id: cq.id, text: "✅ Гуруҳга юборилди" });
+        await xabarTuzat("✅ Тасдиқланди — гуруҳга юборилди");
+      } catch (e) {
+        kutilayotgan.set(id, p); // xato bo'lsa qayta urinish uchun saqlab qolamiz
+        await tgFetch(t.token, "answerCallbackQuery", { callback_query_id: cq.id, text: "Хато: " + e.message, show_alert: true });
+      }
+    } else {
+      await tgFetch(t.token, "answerCallbackQuery", { callback_query_id: cq.id, text: "❌ Рад этилди" });
+      await xabarTuzat("❌ Рад этилди — гуруҳга юборилмади");
+    }
+  }
+}
+
+async function tgPolling() {
+  for (;;) {
+    const t = db.telegram;
+    if (!t.token) { await yangi(2000); continue; }
+    try {
+      const r = await fetch(`https://api.telegram.org/bot${t.token}/getUpdates?timeout=30&offset=${tgOffset}`);
+      const j = await r.json();
+      if (j.ok && Array.isArray(j.result)) {
+        for (const u of j.result) {
+          tgOffset = u.update_id + 1;
+          try { await tgYangilik(u, db.telegram); } catch (e) { console.error("[telegram] yangilik:", e.message); }
+        }
+      } else if (!j.ok) {
+        await yangi(3000);
+      }
+    } catch (e) {
+      await yangi(3000);
+    }
+  }
+}
+tgPolling();
 
 app.get("/api/holat", (req, res) => {
   res.json({ xodimlar: db.xodimlar.length, davomat: db.davomat.length, bugun: bugun(), lavozimlar: LAVOZIMLAR });
