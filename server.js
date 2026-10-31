@@ -18,7 +18,7 @@ const TZ = 5 * 60 * 60 * 1000;
 
 // ───────── Ma'lumot bazasi (JSON) ─────────
 
-const LAVOZIMLAR = ["qorovul", "operator", "haydovchi"];
+const LAVOZIMLAR = ["qorovul", "operator", "rahbar", "haydovchi"];
 
 function boshlangich() {
   return {
@@ -27,6 +27,7 @@ function boshlangich() {
     jadvallar: {
       qorovul: { kirishDan: "06:00", kirishGacha: "06:30", chiqishDan: "14:00", chiqishGacha: "14:00" },
       operator: { kirishDan: "06:00", kirishGacha: "08:00", chiqishDan: "17:00", chiqishGacha: "21:00" },
+      rahbar: { kirishDan: "06:00", kirishGacha: "09:00", chiqishDan: "17:00", chiqishGacha: "21:00" },
       haydovchi: { kirishDan: "06:00", kirishGacha: "08:00", chiqishDan: "17:00", chiqishGacha: "21:00" },
     },
     telegram: { token: "", chatId: "", adminChatId: "", threadId: "", avto: false, vaqt: "09:30", oxirgiYuborilgan: "", hodisaYubor: false },
@@ -36,12 +37,18 @@ function boshlangich() {
 }
 
 function oqi() {
+  let d;
   try {
-    const d = JSON.parse(fs.readFileSync(DATA, "utf8"));
-    return { ...boshlangich(), ...d };
+    d = JSON.parse(fs.readFileSync(DATA, "utf8"));
   } catch {
     return boshlangich();
   }
+  const b = boshlangich();
+  const db = { ...b, ...d };
+  // Yangi lavozim jadvallari va yangi telegram maydonlari mavjud bazaga ham qo'shilsin
+  db.jadvallar = { ...b.jadvallar, ...(d.jadvallar || {}) };
+  db.telegram = { ...b.telegram, ...(d.telegram || {}) };
+  return db;
 }
 
 let db = oqi();
@@ -82,6 +89,7 @@ function chiqishHolati(hhmm, jadval) {
 /** Lavozimdan taxminiy bo'lim (hisobotda guruhlash uchun). Panelda keyin qo'lda o'zgartirilishi mumkin. */
 function bolimLavozimdan(lavozim) {
   const s = String(lavozim || "").toLowerCase();
+  if (s.includes("rahbar") || s.includes("раҳбар") || s.includes("director") || s.includes("boshliq")) return "Rahbariyat";
   if (s.includes("qorovul") || s.includes("qоровул") || s.includes("qarovul")) return "Qorovullar";
   if (s.includes("haydovchi") || s.includes("shofyor")) return "Transport";
   if (s.includes("operator") || s.includes("ishchi") || s.includes("mashinist")) return "Ishlab chiqarish";
