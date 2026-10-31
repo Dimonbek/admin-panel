@@ -27,7 +27,7 @@ function boshlangich() {
     // kirishGacha — oxirgi kirish vaqti (undan keyin "kech"); chiqishGacha — ish tugashi (undan keyin "qo'shimcha").
     // kirishDan=00:00 — erta kelish jazolanmaydi, faqat haqiqiy vaqt yoziladi.
     jadvallar: {
-      qorovul: { kirishDan: "00:00", kirishGacha: "07:00", chiqishDan: "00:00", chiqishGacha: "02:00" },
+      qorovul: { kirishDan: "00:00", kirishGacha: "03:00", chiqishDan: "00:00", chiqishGacha: "00:00" },
       operator: { kirishDan: "00:00", kirishGacha: "08:00", chiqishDan: "00:00", chiqishGacha: "17:00" },
       rahbar: { kirishDan: "00:00", kirishGacha: "10:00", chiqishDan: "00:00", chiqishGacha: "17:00" },
       haydovchi: { kirishDan: "00:00", kirishGacha: "08:00", chiqishDan: "00:00", chiqishGacha: "17:00" },
@@ -61,9 +61,9 @@ function saqla() {
 
 // Jadval vaqtlari yangilandi (bir martalik) — mavjud bazaga ham yangi lavozim qoidalarini qo'llaydi.
 // Keyin panelning "Jadvallar" sahifasidan o'zgartirilsa — o'zgarishlar saqlanadi.
-if (db.jadvalV !== 2) {
+if (db.jadvalV !== 3) {
   db.jadvallar = boshlangich().jadvallar;
-  db.jadvalV = 2;
+  db.jadvalV = 3;
   saqla();
 }
 
@@ -307,7 +307,9 @@ function kunlikMalumot(kun) {
     const kirH = kir ? soat(kir.vaqt) : null;
     const chiqH = chiq ? soat(chiq.vaqt) : null;
     const kechMin = kir && jadval ? Math.max(0, daqiqa(kirH) - daqiqa(jadval.kirishGacha)) : 0;
-    const qoshMin = chiq && jadval ? Math.max(0, daqiqa(chiqH) - daqiqa(jadval.chiqishGacha)) : 0;
+    // chiqishGacha "00:00" — tun oxiri (24:00), ya'ni yarim tungacha ishlasa qo'shimcha yo'q (qorovul)
+    const chiqGachaMin = jadval ? (jadval.chiqishGacha === "00:00" ? 1440 : daqiqa(jadval.chiqishGacha)) : 0;
+    const qoshMin = chiq && jadval ? Math.max(0, daqiqa(chiqH) - chiqGachaMin) : 0;
     const ishMin = kir && chiq ? Math.round((chiq.vaqt - kir.vaqt) / 60000) : 0;
     const q = {
       n: ++n, id: idMatn(x.id), fio: x.ism, bolim: x.bolim || "Asosiy bo'lim", lavozim: x.lavozim,
