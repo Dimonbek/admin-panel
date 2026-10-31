@@ -24,11 +24,13 @@ function boshlangich() {
   return {
     xodimlar: [],
     davomat: [],
+    // kirishGacha — oxirgi kirish vaqti (undan keyin "kech"); chiqishGacha — ish tugashi (undan keyin "qo'shimcha").
+    // kirishDan=00:00 — erta kelish jazolanmaydi, faqat haqiqiy vaqt yoziladi.
     jadvallar: {
-      qorovul: { kirishDan: "06:00", kirishGacha: "06:30", chiqishDan: "14:00", chiqishGacha: "14:00" },
-      operator: { kirishDan: "06:00", kirishGacha: "08:00", chiqishDan: "17:00", chiqishGacha: "21:00" },
-      rahbar: { kirishDan: "06:00", kirishGacha: "09:00", chiqishDan: "17:00", chiqishGacha: "21:00" },
-      haydovchi: { kirishDan: "06:00", kirishGacha: "08:00", chiqishDan: "17:00", chiqishGacha: "21:00" },
+      qorovul: { kirishDan: "00:00", kirishGacha: "07:00", chiqishDan: "00:00", chiqishGacha: "02:00" },
+      operator: { kirishDan: "00:00", kirishGacha: "08:00", chiqishDan: "00:00", chiqishGacha: "17:00" },
+      rahbar: { kirishDan: "00:00", kirishGacha: "10:00", chiqishDan: "00:00", chiqishGacha: "17:00" },
+      haydovchi: { kirishDan: "00:00", kirishGacha: "08:00", chiqishDan: "00:00", chiqishGacha: "17:00" },
     },
     telegram: { token: "", chatId: "", adminChatId: "", threadId: "", firma: "GREAT BUILDING HOLDING MChJ", avto: false, vaqt: "09:30", oxirgiYuborilgan: "", hodisaYubor: false },
     keyingiXodim: 1,
@@ -55,6 +57,14 @@ let db = oqi();
 function saqla() {
   fs.mkdirSync(path.dirname(DATA), { recursive: true });
   fs.writeFileSync(DATA, JSON.stringify(db, null, 2));
+}
+
+// Jadval vaqtlari yangilandi (bir martalik) — mavjud bazaga ham yangi lavozim qoidalarini qo'llaydi.
+// Keyin panelning "Jadvallar" sahifasidan o'zgartirilsa — o'zgarishlar saqlanadi.
+if (db.jadvalV !== 2) {
+  db.jadvallar = boshlangich().jadvallar;
+  db.jadvalV = 2;
+  saqla();
 }
 
 // ───────── Yordamchilar ─────────
