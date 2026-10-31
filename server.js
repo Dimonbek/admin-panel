@@ -30,7 +30,7 @@ function boshlangich() {
       rahbar: { kirishDan: "06:00", kirishGacha: "09:00", chiqishDan: "17:00", chiqishGacha: "21:00" },
       haydovchi: { kirishDan: "06:00", kirishGacha: "08:00", chiqishDan: "17:00", chiqishGacha: "21:00" },
     },
-    telegram: { token: "", chatId: "", adminChatId: "", threadId: "", avto: false, vaqt: "09:30", oxirgiYuborilgan: "", hodisaYubor: false },
+    telegram: { token: "", chatId: "", adminChatId: "", threadId: "", firma: "GREAT BUILDING HOLDING MChJ", avto: false, vaqt: "09:30", oxirgiYuborilgan: "", hodisaYubor: false },
     keyingiXodim: 1,
     keyingiDavomat: 1,
   };
@@ -350,7 +350,7 @@ app.get("/api/hisobot/kunlik.xlsx", async (req, res) => {
   const kun = /^\d{4}-\d{2}-\d{2}$/.test(req.query.sana) ? req.query.sana : bugun();
   const kunNuqta = kun.split("-").reverse().join(".");
   const m = kunlikMalumot(kun);
-  const buf = await kunlikXlsx({ ...m, sana: kunNuqta });
+  const buf = await kunlikXlsx({ ...m, sana: kunNuqta, firma: db.telegram.firma });
   res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
   res.setHeader("Content-Disposition", `attachment; filename="Report_Kunlik_${kun}.xlsx"`);
   res.send(Buffer.from(buf));
@@ -412,11 +412,14 @@ const kutilayotgan = new Map(); // tasdiq_id -> { kun }
 
 /** Kunlik hisobot buferi, izohi va fayl nomini tayyorlaydi */
 async function kunlikTayyor(kun) {
+  const firma = db.telegram.firma || "GREAT BUILDING HOLDING MChJ";
   const m = kunlikMalumot(kun);
   const kunNuqta = kun.split("-").reverse().join(".");
-  const buf = Buffer.from(await kunlikXlsx({ ...m, sana: kunNuqta }));
+  const buf = Buffer.from(await kunlikXlsx({ ...m, sana: kunNuqta, firma }));
   const foiz = m.jami ? Math.round((m.kelgan / m.jami) * 100) : 0;
-  const izoh = `📊 Кунлик давомат ҳисоботи — ${kunNuqta}\nЖами: ${m.jami} | Келган: ${m.kelgan} (${foiz}%) | Келмаган: ${m.kelmagan}`;
+  const n = new Date(Date.now() + TZ).toISOString();
+  const yuborilgan = `${n.slice(8, 10)}.${n.slice(5, 7)}.${n.slice(0, 4)} ${n.slice(11, 16)}`;
+  const izoh = `📊 Кунлик давомат ҳисоботи — ${kunNuqta}\nЖами: ${m.jami} | Келган: ${m.kelgan} (${foiz}%) | Келмаган: ${m.kelmagan}\n\n🏢 ${firma}\n🕐 Юборилди: ${yuborilgan}`;
   return { buf, izoh, nom: `Report_Kunlik_${kun}.xlsx` };
 }
 
@@ -446,15 +449,16 @@ async function guruhgaYubor(kun) {
 
 app.get("/api/telegram", (req, res) => {
   const t = db.telegram;
-  res.json({ token: t.token, chatId: t.chatId, adminChatId: t.adminChatId, threadId: t.threadId, avto: t.avto, vaqt: t.vaqt, oxirgiYuborilgan: t.oxirgiYuborilgan, hodisaYubor: t.hodisaYubor });
+  res.json({ token: t.token, chatId: t.chatId, adminChatId: t.adminChatId, threadId: t.threadId, firma: t.firma, avto: t.avto, vaqt: t.vaqt, oxirgiYuborilgan: t.oxirgiYuborilgan, hodisaYubor: t.hodisaYubor });
 });
 
 app.put("/api/telegram", (req, res) => {
-  const { token, chatId, adminChatId, threadId, avto, vaqt, hodisaYubor } = req.body || {};
+  const { token, chatId, adminChatId, threadId, firma, avto, vaqt, hodisaYubor } = req.body || {};
   if (token !== undefined) db.telegram.token = String(token).trim();
   if (chatId !== undefined) db.telegram.chatId = String(chatId).trim();
   if (adminChatId !== undefined) db.telegram.adminChatId = String(adminChatId).trim();
   if (threadId !== undefined) db.telegram.threadId = String(threadId).trim();
+  if (firma !== undefined) db.telegram.firma = String(firma).trim();
   if (avto !== undefined) db.telegram.avto = Boolean(avto);
   if (hodisaYubor !== undefined) db.telegram.hodisaYubor = Boolean(hodisaYubor);
   if (vaqt !== undefined && /^\d{2}:\d{2}$/.test(vaqt)) db.telegram.vaqt = vaqt;

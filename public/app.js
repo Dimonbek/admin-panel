@@ -144,6 +144,7 @@ $("#hOyYukla").addEventListener("click", () => {
 // ── Telegram sozlama ──
 async function telegramYukla() {
   const t = await api("/api/telegram");
+  $("#tgFirma").value = t.firma || "";
   $("#tgToken").value = t.token || "";
   $("#tgAdmin").value = t.adminChatId || "";
   $("#tgChat").value = t.chatId || "";
@@ -153,6 +154,7 @@ async function telegramYukla() {
 }
 function tgSozlama() {
   return {
+    firma: $("#tgFirma").value.trim(),
     token: $("#tgToken").value.trim(),
     adminChatId: $("#tgAdmin").value.trim(),
     chatId: $("#tgChat").value.trim(),

@@ -57,13 +57,14 @@ function bolimSarlavha(ws, qator, matn, rang) {
 }
 
 /** Kunlik hisobot — namuna format bilan bir xil */
-export async function kunlikXlsx({ sana, jami, kelgan, kelmagan, bolimlar }) {
+export async function kunlikXlsx({ sana, jami, kelgan, kelmagan, bolimlar, firma }) {
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("Кунлик Давомат");
   ustunlarniSozla(ws);
 
+  const bosh = firma ? String(firma).toUpperCase() : "КОРХОНА";
   const foiz = jami ? Math.round((kelgan / jami) * 100) : 0;
-  sarlavhaBloki(ws, `📊 КОРХОНА КУНЛИК ДАВОМАТ ҲИСОБОТИ (${sana})`,
+  sarlavhaBloki(ws, `📊 ${bosh} — КУНЛИК ДАВОМАТ ҲИСОБОТИ (${sana})`,
     `Сана: ${sana} | Жами: ${jami} нафар | Келган: ${kelgan} нафар (${foiz}%) | Келмаган: ${kelmagan} нафар`);
 
   let r = 4;
